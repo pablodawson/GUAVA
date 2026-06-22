@@ -151,10 +151,12 @@ class Optimization_Loss(L.LightningModule):
             render_crop=F.interpolate(render_crop[None],(256,256),mode='bilinear')
             gt_crops.append(gt_crop)
             render_crops.append(render_crop)
+        if not render_crops:
+            return torch.tensor(0.0, device=render_images.device)
         render_crops=torch.cat(render_crops,dim=0)
         gt_crops=torch.cat(gt_crops,dim=0)
         for ii in range(len(loss_funs)):
             loss=loss+loss_funs[ii](render_crops,gt_crops)*loss_lambdas[ii]
-        
+
         return loss
     

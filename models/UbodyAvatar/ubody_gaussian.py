@@ -228,7 +228,7 @@ class Ubody_Gaussian(L.LightningModule):
         #uvmap gaussians
         face_orien_mat, face_scaling = compute_face_orientation(smplx_deform_res["vertices"], self.smplx.faces_tensor, return_scale=True)
         face_orien_quat = quat_xyzw_to_wxyz(rotmat_to_unitquat(face_orien_mat))
-        
+        # vertices SMPL a gaussian center
         face_vertices=smplx_deform_res["vertices"][:,self.smplx.faces_tensor]# b f k 3
         face_vertices_nn=face_vertices[:,self._uv_binding_face]# b n k 3
         face_bary=self._uv_face_bary[None].expand(batch_size,-1,-1)# b n k
@@ -242,7 +242,7 @@ class Ubody_Gaussian(L.LightningModule):
         self._uv_rotation_deform=quat_xyzw_to_wxyz(quat_product(quat_wxyz_to_xyzw(face_orien_quat), quat_wxyz_to_xyzw(self._uv_rotation)))
         self._uv_scaling_deform = self._uv_scaling* face_scaling_nn
         
-        #integrate
+        #integrate: Detalles (UV) + Global (SMPLX)
         self._xyz_deform=torch.cat([self._smplx_xyz_deform,self._uv_xyz_deform],dim=1)
         self._rotation_deform=torch.cat([self._smplx_rotation_deform,self._uv_rotation_deform],dim=1)
         self._scaling_deform=torch.cat([self._smplx_scaling,self._uv_scaling_deform],dim=1)

@@ -103,19 +103,28 @@ def render_cross_set(meta_cfg,infer_model:Ubody_Gaussian_inferer,render_model:Ga
     for s_vidx,s_video_id in enumerate(s_video_ids):
         source_info=source_dataset._load_source_info(s_video_id,)
         source_info['render_cam_params']=source_dataset._load_target_info(s_video_id,source_dataset.videos_info[s_video_id]['frames_keys'][0])
+        source_frame_key=source_dataset.videos_info[s_video_id]['frames_keys'][0]
+        source_frame_name=source_frame_key.split('/')[-1]
         vertex_gs_dict,up_point_gs_dict,_ = infer_model(source_info, )
         ubody_gaussians=Ubody_Gaussian(meta_cfg.MODEL,vertex_gs_dict,up_point_gs_dict,pruning=True)
         ubody_gaussians.init_ehm(infer_model.ehm)
         ubody_gaussians.eval()
+        #ubody_gaussians.save_gaussian_ply(out_dir, save_split=True)
+        #ubody_gaussians.save_gaussian_ply(out_dir, save_split=False)
 
         out_sub_dir=os.path.join(out_dir,s_video_id)
         os.makedirs(out_sub_dir,exist_ok=True)
+        out_source_dir=os.path.join(out_sub_dir,source_frame_name)
+        os.makedirs(out_source_dir,exist_ok=True)
+        ubody_gaussians.save_gaussian_ply(out_source_dir, save_split=False)
+        ubody_gaussians.save_gaussian_ply(out_source_dir, save_split=True)
+        torchvision.utils.save_image(source_info['image'], os.path.join(out_source_dir,'source_image.png'))
         for t_vidx,t_video_id in enumerate(t_video_ids):
             print(f'{t_video_id} [{t_vidx+1}/{len(t_video_ids)}]')
-            out_videoid_dir=os.path.join(out_sub_dir,f'{s_video_id}_{t_video_id}')
+            out_videoid_dir=os.path.join(out_source_dir,f'{s_video_id}_{t_video_id}')
             out_render_path=os.path.join(out_videoid_dir,'render')
+
             os.makedirs(out_render_path,exist_ok=True)
-            torchvision.utils.save_image(source_info['image'], os.path.join(out_videoid_dir,'source_image.png'))
             frames=target_dataset.videos_info[t_video_id]['frames_keys']
             
             test_num=target_dataset.testing_split[t_video_id]
@@ -249,6 +258,7 @@ def test(args,config_name, base_model, devices,data_path,model_path,save_path,ou
     _state=torch.load(base_model, map_location='cpu', weights_only=True)
     infer_model.load_state_dict(_state['model'], strict=False)
     render_model.load_state_dict(_state['render_model'], strict=False)
+    
     print('Load model from: {}.'.format(base_model))
     
     # load dataset
